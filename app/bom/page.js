@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { bomTemplates, criticalityLevels, units } from "../../data/bom";
-import { materialTypes } from "../../data/materials";
 import {
   cn,
   formatCurrency,
@@ -21,163 +19,128 @@ import {
   Lock,
 } from "lucide-react";
 
+const initialFormData = {
+  productName: "",
+  description: "",
+  criticalityLevel: "Medium",
+  components: [
+    {
+      name: "",
+      materialType: "",
+      materialGrade: "",
+      requiredQuantity: "",
+      unit: "kg",
+      requiredProperties: [""],
+    },
+  ],
+  estimatedCost: "",
+  currency: "INR",
+};
+
 export default function BOMPage() {
   const { isAdmin } = useAuth();
+
+  // State for data, loading, and errors
   const [boms, setBoms] = useState([]);
+  const [criticalityLevels, setCriticalityLevels] = useState([]);
+  const [units, setUnits] = useState([]);
+  const [materialTypes, setMaterialTypes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // State for UI controls
   const [showForm, setShowForm] = useState(false);
   const [editingBom, setEditingBom] = useState(null);
   const [viewingBom, setViewingBom] = useState(null);
+  const [formData, setFormData] = useState(initialFormData);
 
-  const [formData, setFormData] = useState({
-    productName: "",
-    description: "",
-    criticalityLevel: "Medium",
-    components: [
-      {
-        name: "",
-        materialType: "",
-        materialGrade: "",
-        requiredQuantity: "",
-        unit: "kg",
-        requiredProperties: [""],
-      },
-    ],
-    estimatedCost: "",
-    currency: "INR",
-  });
-
+  // Fetch initial data from the API
   useEffect(() => {
-    // Load existing BOMs from localStorage
-    const savedBoms = localStorage.getItem("lca-boms");
-    if (savedBoms) {
-      setBoms(JSON.parse(savedBoms));
-    } else {
-      // Load template BOMs
-      setBoms(bomTemplates);
-      localStorage.setItem("lca-boms", JSON.stringify(bomTemplates));
-    }
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/boms");
+        if (!response.ok) throw new Error("Failed to fetch data.");
+        const data = await response.json();
+        setBoms(data.boms);
+        setCriticalityLevels(data.criticalityLevels);
+        setUnits(data.units);
+        setMaterialTypes(data.materialTypes);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
-  const saveBoms = (newBoms) => {
-    setBoms(newBoms);
-    localStorage.setItem("lca-boms", JSON.stringify(newBoms));
-  };
-
-  const handleInputChange = (field, value) => {
+  // --- Form handlers (no changes needed in these) ---
+  const handleInputChange = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleComponentChange = (index, field, value) => {
+  const handleComponentChange = (index, field, value) =>
     setFormData((prev) => ({
       ...prev,
-      components: prev.components.map((comp, i) =>
-        i === index ? { ...comp, [field]: value } : comp
+      components: prev.components.map((c, i) =>
+        i === index ? { ...c, [field]: value } : c
       ),
     }));
-  };
-
-  const handlePropertyChange = (compIndex, propIndex, value) => {
+  const handlePropertyChange = (compIndex, propIndex, value) =>
     setFormData((prev) => ({
       ...prev,
-      components: prev.components.map((comp, i) =>
+      components: prev.components.map((c, i) =>
         i === compIndex
           ? {
-              ...comp,
-              requiredProperties: comp.requiredProperties.map((prop, j) =>
-                j === propIndex ? value : prop
+              ...c,
+              requiredProperties: c.requiredProperties.map((p, j) =>
+                j === propIndex ? value : p
               ),
             }
-          : comp
+          : c
       ),
     }));
-  };
-
-  const addComponent = () => {
+  const addComponent = () =>
     setFormData((prev) => ({
       ...prev,
-      components: [
-        ...prev.components,
-        {
-          name: "",
-          materialType: "",
-          materialGrade: "",
-          requiredQuantity: "",
-          unit: "kg",
-          requiredProperties: [""],
-        },
-      ],
+      components: [...prev.components, initialFormData.components[0]],
     }));
-  };
-
-  const removeComponent = (index) => {
+  const removeComponent = (index) =>
     setFormData((prev) => ({
       ...prev,
       components: prev.components.filter((_, i) => i !== index),
     }));
-  };
-
-  const addProperty = (compIndex) => {
+  const addProperty = (compIndex) =>
     setFormData((prev) => ({
       ...prev,
-      components: prev.components.map((comp, i) =>
+      components: prev.components.map((c, i) =>
         i === compIndex
-          ? {
-              ...comp,
-              requiredProperties: [...comp.requiredProperties, ""],
-            }
-          : comp
+          ? { ...c, requiredProperties: [...c.requiredProperties, ""] }
+          : c
       ),
     }));
-  };
-
-  const removeProperty = (compIndex, propIndex) => {
+  const removeProperty = (compIndex, propIndex) =>
     setFormData((prev) => ({
       ...prev,
-      components: prev.components.map((comp, i) =>
+      components: prev.components.map((c, i) =>
         i === compIndex
           ? {
-              ...comp,
-              requiredProperties: comp.requiredProperties.filter(
+              ...c,
+              requiredProperties: c.requiredProperties.filter(
                 (_, j) => j !== propIndex
               ),
             }
-          : comp
+          : c
       ),
     }));
-  };
+  const resetForm = () => setFormData(initialFormData);
 
-  const resetForm = () => {
-    setFormData({
-      productName: "",
-      description: "",
-      criticalityLevel: "Medium",
-      components: [
-        {
-          name: "",
-          materialType: "",
-          materialGrade: "",
-          requiredQuantity: "",
-          unit: "kg",
-          requiredProperties: [""],
-        },
-      ],
-      estimatedCost: "",
-      currency: "INR",
-    });
-  };
+  // --- CRUD Operations ---
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newBom = {
-      id: editingBom ? editingBom.id : `BOM-${Date.now()}`,
+    const bomData = {
       ...formData,
-      createdDate: editingBom
-        ? editingBom.createdDate
-        : new Date().toISOString().split("T")[0],
-      updatedDate: new Date().toISOString().split("T")[0],
-      components: formData.components.map((comp, index) => ({
-        componentId: `COMP-${Date.now()}-${index}`,
+      components: formData.components.map((comp) => ({
         ...comp,
         requiredProperties: comp.requiredProperties.filter(
           (prop) => prop.trim() !== ""
@@ -185,18 +148,37 @@ export default function BOMPage() {
       })),
     };
 
-    if (editingBom) {
-      const updatedBoms = boms.map((bom) =>
-        bom.id === editingBom.id ? newBom : bom
-      );
-      saveBoms(updatedBoms);
-    } else {
-      saveBoms([...boms, newBom]);
+    try {
+      if (editingBom) {
+        // UPDATE
+        const response = await fetch("/api/boms", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...bomData, _id: editingBom._id }),
+        });
+        if (!response.ok) throw new Error("Failed to update BOM.");
+        const updatedBom = await response.json();
+        setBoms(
+          boms.map((bom) => (bom._id === updatedBom._id ? updatedBom : bom))
+        );
+      } else {
+        // CREATE
+        const response = await fetch("/api/boms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bomData),
+        });
+        if (!response.ok) throw new Error("Failed to create BOM.");
+        const newBom = await response.json();
+        setBoms([...boms, newBom]);
+      }
+      resetForm();
+      setShowForm(false);
+      setEditingBom(null);
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
     }
-
-    resetForm();
-    setShowForm(false);
-    setEditingBom(null);
   };
 
   const handleEdit = (bom) => {
@@ -220,20 +202,26 @@ export default function BOMPage() {
     setShowForm(true);
   };
 
-  const handleDelete = (bomId) => {
+  const handleDelete = async (bomId) => {
     if (confirm("Are you sure you want to delete this BOM?")) {
-      const updatedBoms = boms.filter((bom) => bom.id !== bomId);
-      saveBoms(updatedBoms);
+      try {
+        const response = await fetch(`/api/boms?id=${bomId}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) throw new Error("Failed to delete BOM.");
+        setBoms(boms.filter((bom) => bom._id !== bomId));
+      } catch (err) {
+        console.error(err);
+        alert(err.message);
+      }
     }
   };
 
-  const exportBom = (bom) => {
-    const bomData = {
-      ...bom,
-      exportDate: new Date().toISOString(),
-      totalComponents: bom.components.length,
-    };
+  // --- Other UI Functions ---
 
+  const exportBom = (bom) => {
+    // This client-side function remains unchanged
+    const bomData = { ...bom, exportDate: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(bomData, null, 2)], {
       type: "application/json",
     });
@@ -241,11 +229,26 @@ export default function BOMPage() {
     const link = document.createElement("a");
     link.href = url;
     link.download = `${bom.productName.replace(/\s+/g, "-")}-BOM.json`;
-    document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    link.remove();
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">
+        Loading BOMs...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-red-500">
+        Error: {error}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 p-6">
@@ -270,8 +273,7 @@ export default function BOMPage() {
                 }}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
               >
-                <Plus className="w-4 h-4" />
-                Create New BOM
+                <Plus className="w-4 h-4" /> Create New BOM
               </button>
             ) : (
               <div className="flex items-center gap-2 text-gray-400">
@@ -288,7 +290,7 @@ export default function BOMPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {boms.map((bom) => (
               <div
-                key={bom.id}
+                key={bom._id}
                 className="bg-gray-800 rounded-lg shadow-sm p-6"
               >
                 <div className="flex justify-between items-start mb-4">
@@ -296,7 +298,7 @@ export default function BOMPage() {
                     <h3 className="text-lg font-semibold text-white">
                       {bom.productName}
                     </h3>
-                    <p className="text-sm text-gray-400 mt-1">{bom.id}</p>
+                    <p className="text-sm text-gray-400 mt-1">{bom._id}</p>
                   </div>
                   <span
                     className={cn(
@@ -307,11 +309,9 @@ export default function BOMPage() {
                     {bom.criticalityLevel}
                   </span>
                 </div>
-
                 <p className="text-gray-300 text-sm mb-4 line-clamp-2">
                   {bom.description}
                 </p>
-
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Components:</span>
@@ -332,14 +332,12 @@ export default function BOMPage() {
                     </span>
                   </div>
                 </div>
-
                 <div className="flex gap-2">
                   <button
                     onClick={() => setViewingBom(bom)}
                     className="flex-1 bg-gray-100 text-gray-300 px-3 py-2 rounded text-sm hover:bg-gray-200 flex items-center justify-center gap-1"
                   >
-                    <Eye className="w-4 h-4" />
-                    View
+                    <Eye className="w-4 h-4" /> View
                   </button>
                   {isAdmin ? (
                     <>
@@ -347,8 +345,7 @@ export default function BOMPage() {
                         onClick={() => handleEdit(bom)}
                         className="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded text-sm hover:bg-blue-200 flex items-center justify-center gap-1"
                       >
-                        <Edit className="w-4 h-4" />
-                        Edit
+                        <Edit className="w-4 h-4" /> Edit
                       </button>
                       <button
                         onClick={() => exportBom(bom)}
@@ -357,7 +354,7 @@ export default function BOMPage() {
                         <Download className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(bom.id)}
+                        onClick={() => handleDelete(bom._id)}
                         className="bg-red-100 text-red-700 px-3 py-2 rounded text-sm hover:bg-red-200"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -365,8 +362,7 @@ export default function BOMPage() {
                     </>
                   ) : (
                     <div className="flex-1 flex items-center justify-center gap-1 text-gray-500 text-xs">
-                      <Lock className="w-3 h-3" />
-                      Admin Only
+                      <Lock className="w-3 h-3" /> Admin Only
                     </div>
                   )}
                 </div>
@@ -717,7 +713,7 @@ export default function BOMPage() {
                   </button>
                 </div>
                 <div className="flex items-center gap-4 mt-2">
-                  <span className="text-gray-400">{viewingBom.id}</span>
+                  <span className="text-gray-400">{viewingBom._id}</span>
                   <span
                     className={cn(
                       "px-2 py-1 text-xs font-semibold rounded-full",

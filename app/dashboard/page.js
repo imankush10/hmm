@@ -1,37 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import {
-  dashboardKpis,
-  scenarioComparisons,
-  materialFlowData,
-} from "../../data/dashboard";
+import { useState, useEffect } from "react"; // Import useEffect
 import { formatNumber, formatCurrency, cn } from "../../lib/utils";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Sankey,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  Sankey,
-  ComposedChart,
 } from "recharts";
 import {
-  TrendingUp,
-  TrendingDown,
-  Droplets,
-  Zap,
-  Recycle,
-  Factory,
   AlertTriangle,
   CheckCircle,
+  Droplets,
+  Factory,
+  Recycle,
+  TrendingDown,
+  TrendingUp,
+  Zap,
 } from "lucide-react";
 
 const COLORS = [
@@ -44,9 +39,56 @@ const COLORS = [
 ];
 
 export default function DashboardPage() {
+  // State for data, loading, and errors
+  const [dashboardData, setDashboardData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [selectedScenario, setSelectedScenario] = useState(
     "Primary vs Recycled Mix"
   );
+
+  // Fetch data when the component mounts
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/dashboard");
+        if (!response.ok) {
+          throw new Error("Data could not be fetched.");
+        }
+        const data = await response.json();
+        setDashboardData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []); // Empty dependency array means this runs once on mount
+
+  // Display a loading message while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">
+        Loading Dashboard...
+      </div>
+    );
+  }
+
+  // Display an error message if fetching failed
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-red-500">
+        Error: {error}
+      </div>
+    );
+  }
+  
+  // Destructure the fetched data for easier use
+  const { kpis: dashboardKpis, scenarios: scenarioComparisons, flowData: materialFlowData } = dashboardData;
+
 
   const KPICard = ({
     title,

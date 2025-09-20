@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  environmentalReports,
-  reportMetadata,
-  improvementRecommendations,
-} from "../../data/reports";
-import { formatNumber, formatCurrency, formatDate, cn } from "../../lib/utils";
+  formatNumber,
+  formatCurrency,
+  formatDate,
+  cn,
+} from "../../lib/utils";
 import {
   BarChart,
   Bar,
@@ -41,7 +41,6 @@ import {
   Target,
 } from "lucide-react";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 const COLORS = [
   "#3B82F6",
@@ -53,23 +52,65 @@ const COLORS = [
 ];
 
 export default function ReportsPage() {
-  const [selectedReport, setSelectedReport] = useState("sustainability");
+  const [reportData, setReportData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  useEffect(() => {
+    const fetchReportData = async () => {
+      try {
+        // In a real app, you would fetch from an API endpoint
+        // For this example, we'll simulate a fetch from local data
+        const {
+          environmentalReports,
+          reportMetadata,
+          improvementRecommendations,
+        } = await import("../../data/reports");
+        setReportData({
+          environmentalReports,
+          reportMetadata,
+          improvementRecommendations,
+        });
+      } catch (err) {
+        setError("Failed to fetch report data.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchReportData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">
+        Loading Reports...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-red-500">
+        Error: {error}
+      </div>
+    );
+  }
+
+  const { environmentalReports, reportMetadata, improvementRecommendations } =
+    reportData;
 
   const generatePDF = async () => {
     setIsGeneratingPDF(true);
     try {
-      // Create a new jsPDF instance
       const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      // Add title
       pdf.setFontSize(20);
       pdf.setTextColor(40, 40, 40);
       pdf.text("Environmental Impact & Circularity Assessment Report", 20, 30);
 
-      // Add metadata
       pdf.setFontSize(12);
       pdf.text(
         `Generated on: ${formatDate(reportMetadata.generatedDate)}`,
@@ -78,7 +119,6 @@ export default function ReportsPage() {
       );
       pdf.text(`Reporting Period: ${reportMetadata.reportingPeriod}`, 20, 55);
 
-      // Add carbon footprint section
       pdf.setFontSize(16);
       pdf.text("Carbon Footprint Analysis", 20, 75);
       pdf.setFontSize(12);
@@ -90,7 +130,6 @@ export default function ReportsPage() {
         90
       );
 
-      // Add breakdown
       let yPosition = 105;
       pdf.text("Breakdown by Source:", 20, yPosition);
       Object.entries(environmentalReports.carbonFootprint.breakdown).forEach(
@@ -108,7 +147,6 @@ export default function ReportsPage() {
         }
       );
 
-      // Add water usage section
       yPosition += 20;
       pdf.setFontSize(16);
       pdf.text("Water Usage", 20, yPosition);
@@ -130,7 +168,6 @@ export default function ReportsPage() {
         yPosition
       );
 
-      // Add energy consumption
       yPosition += 20;
       pdf.setFontSize(16);
       pdf.text("Energy Consumption", 20, yPosition);
@@ -154,7 +191,6 @@ export default function ReportsPage() {
         yPosition
       );
 
-      // Add circularity metrics
       yPosition += 20;
       pdf.setFontSize(16);
       pdf.text("Circularity Metrics", 20, yPosition);
@@ -166,13 +202,11 @@ export default function ReportsPage() {
         yPosition
       );
 
-      // Add new page if needed
       if (yPosition > pageHeight - 40) {
         pdf.addPage();
         yPosition = 30;
       }
 
-      // Add recommendations
       yPosition += 20;
       pdf.setFontSize(16);
       pdf.text("Improvement Recommendations", 20, yPosition);
@@ -197,7 +231,6 @@ export default function ReportsPage() {
         yPosition += 15;
       });
 
-      // Add footer
       const totalPages = pdf.internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
@@ -206,7 +239,6 @@ export default function ReportsPage() {
         pdf.text("LCA Platform - Environmental Report", 20, pageHeight - 10);
       }
 
-      // Save the PDF
       pdf.save(
         `LCA-Environmental-Report-${new Date().toISOString().split("T")[0]}.pdf`
       );

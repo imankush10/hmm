@@ -1,12 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import {
-  materialsInventory,
-  materialTypes,
-  materialForms,
-  materialSources,
-} from "../../data/materials";
+import { useState, useEffect } from "react"; // Import useEffect
 import { cn, formatNumber, formatDate, getStatusColor } from "../../lib/utils";
 import { useAuth } from "../../hooks/useAuth";
 import {
@@ -25,7 +19,15 @@ import {
 
 export default function InventoryPage() {
   const { isAdmin } = useAuth();
-  const [materials, setMaterials] = useState(materialsInventory);
+
+  // State for data, loading, and errors
+  const [materials, setMaterials] = useState([]);
+  const [materialTypes, setMaterialTypes] = useState([]);
+  const [materialForms, setMaterialForms] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Existing state for UI controls
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -33,7 +35,7 @@ export default function InventoryPage() {
   const [showTraceabilityModal, setShowTraceabilityModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // New Material Form State
+  // New Material Form State (no changes here)
   const [newMaterial, setNewMaterial] = useState({
     type: "",
     form: "",
@@ -49,6 +51,28 @@ export default function InventoryPage() {
     origin: "",
     coordinates: "",
   });
+
+  // Fetch initial data when the component mounts
+  useEffect(() => {
+    const fetchInventoryData = async () => {
+      try {
+        const response = await fetch("/api/materials");
+        if (!response.ok) {
+          throw new Error("Data could not be fetched.");
+        }
+        const data = await response.json();
+        setMaterials(data.inventory);
+        setMaterialTypes(data.types);
+        setMaterialForms(data.forms);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInventoryData();
+  }, []); // Empty dependency array means this runs once on mount
 
   const filteredMaterials = materials.filter((material) => {
     const matchesSearch =
@@ -66,68 +90,48 @@ export default function InventoryPage() {
     setShowTraceabilityModal(true);
   };
 
-  const handleAddMaterial = () => {
-    // Generate new ID
-    const newId = `MAT-${String(materials.length + 1).padStart(3, "0")}`;
+  // MODIFIED: handleAddMaterial now posts to the API
+  const handleAddMaterial = async () => {
+    try {
+      const response = await fetch("/api/materials", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newMaterial),
+      });
 
-    // Create new material object
-    const materialToAdd = {
-      id: newId,
-      type: newMaterial.type,
-      form: newMaterial.form,
-      grade: newMaterial.grade,
-      source: newMaterial.source,
-      quantity: parseFloat(newMaterial.quantity),
-      unit: newMaterial.unit,
-      status: "Available",
-      lastUpdated: new Date().toISOString().split("T")[0],
-      traceability: {
-        origin: {
-          mine: newMaterial.origin,
-          coordinates: newMaterial.coordinates,
-          certifications: newMaterial.certifications
-            .split(",")
-            .map((cert) => cert.trim())
-            .filter((cert) => cert),
-        },
-        supplier: {
-          name: newMaterial.supplierName,
-          contact: newMaterial.supplierContact,
-          rating: 4.0,
-        },
-        batchTracking: {
-          batchNumber: `${newId}-${Date.now()}`,
-          productionDate: new Date().toISOString().split("T")[0],
-          qualityTests: [],
-        },
-        transportation: {
-          route: "New Route",
-          carbonFootprint: newMaterial.carbonFootprint,
-          transportMode: newMaterial.transportMode,
-        },
-      },
-    };
+      if (!response.ok) {
+        throw new Error("Failed to add material.");
+      }
 
-    // Add to materials list
-    setMaterials([...materials, materialToAdd]);
+      const addedMaterial = await response.json();
 
-    // Reset form and close modal
-    setNewMaterial({
-      type: "",
-      form: "",
-      grade: "",
-      source: "",
-      quantity: "",
-      unit: "tons",
-      supplierName: "",
-      supplierContact: "",
-      certifications: "",
-      carbonFootprint: "",
-      transportMode: "",
-      origin: "",
-      coordinates: "",
-    });
-    setShowAddModal(false);
+      // Add the new material returned from the API to the local state
+      setMaterials([...materials, addedMaterial]);
+
+      // Reset form and close modal
+      setNewMaterial({
+        type: "",
+        form: "",
+        grade: "",
+        source: "",
+        quantity: "",
+        unit: "tons",
+        supplierName: "",
+        supplierContact: "",
+        certifications: "",
+        carbonFootprint: "",
+        transportMode: "",
+        origin: "",
+        coordinates: "",
+      });
+      setShowAddModal(false);
+    } catch (err) {
+      // You can implement more robust error handling here, like a toast notification
+      console.error("Error adding material:", err);
+      alert("Error adding material. Please check the console.");
+    }
   };
 
   const handleInputChange = (field, value) => {
@@ -137,6 +141,7 @@ export default function InventoryPage() {
     }));
   };
 
+  // exportData and other UI functions remain the same
   const exportData = () => {
     const csvContent = [
       [
@@ -175,6 +180,23 @@ export default function InventoryPage() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+
+  // Render loading and error states
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">
+        Loading Inventory...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-red-500">
+        Error: {error}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 p-6">
