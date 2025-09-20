@@ -24,3 +24,64 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@media print {
+  /* Hide everything by default when printing */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Only show the report container and its contents */
+  .print-container,
+  .print-container * {
+    visibility: visible;
+  }
+
+  /* Position the report container at the top of the page */
+  .print-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  /* Hide elements we don't want to print, like buttons */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure a light theme for printing */
+  body {
+    background-color: white !important;
+  }
+
+  /* Force text colors to be dark for readability on paper */
+  .bg-gray-800,
+  .bg-gray-900\/50,
+  .bg-gray-800 * {
+    background-color: white !important;
+    color: black !important;
+    border-color: #ccc !important;
+  }
+
+  .text-white,
+  .text-gray-300,
+  .text-gray-400 {
+    color: black !important;
+  }
+
+  .text-green-400 {
+    color: #15803d !important;
+  }
+  .text-blue-400 {
+    color: #1d4ed8 !important;
+  }
+  .text-orange-400 {
+    color: #b45309 !important;
+  }
+
+  /* Prevent charts from being cut off between pages */
+  .grid > * {
+    break-inside: avoid;
+  }
+}

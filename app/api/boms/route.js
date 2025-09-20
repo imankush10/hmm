@@ -13,13 +13,30 @@ export async function GET() {
     const client = await clientPromise;
     const db = client.db(DB_NAME);
 
-    const boms = await db.collection(COLLECTION_NAME).find({}).toArray();
+    // Fetch the full BOM documents from the database
+    const bomsFromDb = await db.collection(COLLECTION_NAME).find({}).toArray();
+    
+    // Fetch related data for forms/dropdowns
     const criticalityLevels = await db.collection("criticalityLevels").find({}).toArray();
     const units = await db.collection("units").find({}).toArray();
     const materialTypes = await db.collection("materialTypes").find({}).toArray();
 
+    // ✅ Create the lean, ML-specific version of the BOMs
+    const bomsForML = bomsFromDb.map(bom => ({
+      id: bom.id,
+      productName: bom.productName,
+      components: bom.components.map(c => ({
+        name: c.name,
+        materialType: c.materialType,
+        materialGrade: c.materialGrade,
+        requiredQuantity: c.requiredQuantity,
+        unit: c.unit,
+      }))
+    }));
+
     return NextResponse.json({
-      boms,
+      boms: bomsFromDb, // Send the FULL data for the UI
+      bomsForML: bomsForML, // Send the LEAN data for the Optimization page
       criticalityLevels: criticalityLevels.map(item => item.name),
       units: units.map(item => item.name),
       materialTypes: materialTypes.map(item => item.name),
@@ -29,6 +46,7 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to fetch BOM data" }, { status: 500 });
   }
 }
+
 
 // POST: Create a new BOM
 export async function POST(request) {
