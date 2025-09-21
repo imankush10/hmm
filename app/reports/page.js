@@ -90,13 +90,11 @@ export default function ReportsPage() {
         </div>
 
         <ReportMetadata metadata={reportMetadata} />
-        <KeyMetrics reports={environmentalReports} />
+        <KeyMetrics />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CarbonBreakdownChart data={environmentalReports.carbonFootprint} />
-          <CarbonTrendsChart
-            data={environmentalReports.carbonFootprint.trends}
-          />
+          <CarbonTrendsChart />
         </div>
 
         {/* ✅ ADDED: The missing components in their own grid row */}

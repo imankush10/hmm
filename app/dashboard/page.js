@@ -59,10 +59,10 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         <DashboardHeader />
 
-        <KpiGrid kpis={kpis} />
+        <KpiGrid />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <MaterialFlowChart data={flowData} />
+          <MaterialFlowChart />
           <ResourceUsage kpis={kpis} />
         </div>
 

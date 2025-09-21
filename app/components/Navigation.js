@@ -78,7 +78,9 @@ export default function Navigation() {
   if (!session) {
     return null; // Don't show navigation when not authenticated
   }
-
+  // get url and if it is / then don't show navigation
+  const isRootPath = pathname === "/";
+  
   return (
     <nav className="bg-gray-800 shadow-sm border-b border-gray-700">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
