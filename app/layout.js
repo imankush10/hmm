@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "LCA Platform - Lifecycle & Circularity Assessment",
+  title: "Dhatu Chakra - Sustainable Manufacturing Analytics",
   description:
-    "Comprehensive platform for material inventory, BOM management, AI optimization, and environmental reporting",
+    "Comprehensive Life Cycle Assessment platform for metal products. Analyze environmental impact, optimize circular economy strategies, and make data-driven sustainability decisions.",
 };
 
 export default function RootLayout({ children }) {
