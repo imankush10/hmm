@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 // The URL where your Dockerized ML API is running.
 // Make sure to replace this if your port is different.
-const ML_API_URL = "http://localhost:8085/bom-optimize"; // Assuming '/bom-optimize' is the correct endpoint
+const ML_API_URL = process.env.ML_MODEL_URI+"/bom-optimize"; // Assuming '/bom-optimize' is the correct endpoint
 
 export async function POST(request) {
   try {
