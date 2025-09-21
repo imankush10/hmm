@@ -235,35 +235,6 @@ export default function Navigation() {
           </div>
         </div>
       )}
-
-      {/* Status Bar */}
-      <div className="bg-gradient-to-r from-green-500 to-blue-600 text-white px-4 py-2">
-        <div className="max-w-7xl mx-auto flex items-center justify-between text-sm">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
-              <span>System Online</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Zap className="w-4 h-4" />
-              <span>AI Optimization Active</span>
-            </div>
-            <div className="hidden sm:flex items-center space-x-2">
-              <BarChart3 className="w-4 h-4" />
-              <span>72% Circularity Rate</span>
-            </div>
-          </div>
-          <div className="hidden sm:block">
-            <span>
-              Last Updated:{" "}
-              {new Date().toLocaleTimeString("en-IN", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          </div>
-        </div>
-      </div>
     </nav>
   );
 }
