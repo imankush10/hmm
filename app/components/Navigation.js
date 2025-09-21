@@ -86,11 +86,8 @@ export default function Navigation() {
           {/* Logo and Brand */}
           <div className="flex items-center">
             <Link href="/dashboard" className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg">
-                <Leaf className="w-5 h-5 text-white" />
-              </div>
               <div className="hidden sm:block">
-                <h1 className="text-xl font-bold text-white">LCA Platform</h1>
+                <h1 className="text-xl font-bold text-white">Dhatu Chakra</h1>
                 <p className="text-xs text-gray-400">
                   Lifecycle & Circularity Assessment
                 </p>
