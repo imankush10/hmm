@@ -3,12 +3,13 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { Plus, Shield, Lock } from "lucide-react";
+import { Plus, Shield, Lock, Upload } from "lucide-react";
 
 // Import our new components
 import BomCard from "@/app/components/bom/BomCard";
 import BomForm from "@/app/components/bom/BomForm";
 import BomViewModal from "@/app/components/bom/BomViewModal";
+import CsvImportModal from "@/app/components/shared/CsvImportModal";
 
 const initialFormData = {
   productName: "",
@@ -42,6 +43,7 @@ export default function BOMPage() {
   const [editingBom, setEditingBom] = useState(null);
   const [viewingBom, setViewingBom] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
+  const [showCsvImportModal, setShowCsvImportModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -196,11 +198,78 @@ export default function BOMPage() {
         if (!response.ok) throw new Error("Failed to delete BOM.");
         setBoms(boms.filter((bom) => bom._id !== bomId));
       } catch (err) {
-        console.error(err);
-        alert(err.message);
+        console.error("Error deleting BOM:", err);
+        alert("Error deleting BOM. Please check the console.");
       }
     }
   };
+
+  const handleCsvImportSuccess = async () => {
+    // Refresh the BOM data after successful import
+    try {
+      const response = await fetch("/api/boms");
+      if (response.ok) {
+        const data = await response.json();
+        setBoms(data.boms);
+        setDropdownData({
+          criticalityLevels: data.criticalityLevels,
+          units: data.units,
+          materialTypes: data.materialTypes,
+        });
+      }
+    } catch (err) {
+      console.error("Error refreshing data:", err);
+    }
+  };
+
+  // Sample data for BOM CSV template
+  const sampleBomData = [
+    {
+      id: "BOM-001",
+      productName: "Car Door Frame",
+      description: "Lightweight aluminum door frame for electric vehicles",
+      criticalityLevel: "High",
+      createdDate: "2025-09-15",
+      estimatedCost: 2500,
+      currency: "INR",
+      componentId: "COMP-001",
+      componentName: "Main Frame Structure",
+      materialType: "Aluminum",
+      materialGrade: "AA 6016",
+      requiredQuantity: 15,
+      unit: "kg",
+      requiredProperties:
+        "Tensile strength > 250 MPa;Corrosion resistance: Grade A",
+    },
+    {
+      id: "BOM-001",
+      productName: "Car Door Frame",
+      description: "Lightweight aluminum door frame for electric vehicles",
+      criticalityLevel: "High",
+      createdDate: "2025-09-15",
+      estimatedCost: 2500,
+      currency: "INR",
+      componentId: "COMP-002",
+      componentName: "Reinforcement Brackets",
+      materialType: "Steel",
+      materialGrade: "AISI 304",
+      requiredQuantity: 3,
+      unit: "kg",
+      requiredProperties: "Yield strength > 270 MPa;Weldability: Good",
+    },
+  ];
+
+  const expectedBomColumns = [
+    "id",
+    "productName",
+    "description",
+    "criticalityLevel",
+    "componentName",
+    "materialType",
+    "materialGrade",
+    "requiredQuantity",
+    "unit",
+  ];
 
   const exportBom = (bom) => {
     const blob = new Blob(
@@ -250,16 +319,24 @@ export default function BOMPage() {
               </p>
             </div>
             {isAdmin && !showForm && (
-              <button
-                onClick={() => {
-                  setEditingBom(null);
-                  setFormData(initialFormData);
-                  setShowForm(true);
-                }}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> Create New BOM
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCsvImportModal(true)}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4" /> Import CSV
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingBom(null);
+                    setFormData(initialFormData);
+                    setShowForm(true);
+                  }}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" /> Create New BOM
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -302,6 +379,16 @@ export default function BOMPage() {
             onExport={exportBom}
           />
         )}
+
+        <CsvImportModal
+          isOpen={showCsvImportModal}
+          onClose={() => setShowCsvImportModal(false)}
+          onImportSuccess={handleCsvImportSuccess}
+          importEndpoint="/api/boms/import"
+          title="Import BOMs from CSV"
+          sampleData={sampleBomData}
+          expectedColumns={expectedBomColumns}
+        />
       </div>
     </div>
   );

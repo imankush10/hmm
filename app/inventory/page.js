@@ -10,6 +10,7 @@ import InventoryFilters from "@/app/components/inventory/InventoryFilters";
 import InventoryTable from "@/app/components/inventory/InventoryTable";
 import TraceabilityModal from "@/app/components/inventory/TraceabilityModal";
 import AddMaterialModal from "@/app/components/inventory/AddMaterialModal";
+import CsvImportModal from "@/app/components/shared/CsvImportModal";
 
 export default function InventoryPage() {
   const { isAdmin } = useAuth();
@@ -25,6 +26,7 @@ export default function InventoryPage() {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [showTraceabilityModal, setShowTraceabilityModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCsvImportModal, setShowCsvImportModal] = useState(false);
 
   useEffect(() => {
     const fetchInventoryData = async () => {
@@ -82,6 +84,60 @@ export default function InventoryPage() {
       alert("Error adding material. Please check the console.");
     }
   };
+
+  const handleCsvImportSuccess = async () => {
+    // Refresh the inventory data after successful import
+    try {
+      const response = await fetch("/api/materials");
+      if (response.ok) {
+        const data = await response.json();
+        setMaterials(data.inventory);
+        setDropdownData({
+          types: data.types,
+          forms: data.forms,
+          sources: data.sources,
+        });
+      }
+    } catch (err) {
+      console.error("Error refreshing data:", err);
+    }
+  };
+
+  // Sample data for CSV template
+  const sampleMaterialsData = [
+    {
+      id: "MAT-001",
+      type: "Aluminum",
+      form: "Ingot",
+      grade: "AA 6016",
+      source: "Bauxite Mine - Odisha",
+      quantity: 200,
+      unit: "tons",
+      status: "Available",
+      mine: "Bauxite Mine - Odisha",
+      coordinates: "20.9517°N, 85.0985°E",
+      certifications: "ISO 14001;FSC Certified",
+      supplier_name: "Vedanta Limited",
+      supplier_contact: "supply@vedanta.com",
+      supplier_rating: 4.5,
+      batch_number: "VED-2025-001",
+      production_date: "2025-09-10",
+      route: "Odisha → Mumbai Port → Delhi Factory",
+      carbon_footprint: "2.3 kg CO2/ton",
+      transport_mode: "Rail + Road",
+    },
+  ];
+
+  const expectedMaterialsColumns = [
+    "id",
+    "type",
+    "form",
+    "grade",
+    "source",
+    "quantity",
+    "unit",
+    "status",
+  ];
 
   const exportData = () => {
     const csvContent = [
@@ -142,6 +198,7 @@ export default function InventoryPage() {
           isAdmin={isAdmin}
           onAdd={() => setShowAddModal(true)}
           onExport={exportData}
+          onImport={() => setShowCsvImportModal(true)}
         />
         <InventoryFilters
           searchTerm={filters.search}
@@ -172,6 +229,16 @@ export default function InventoryPage() {
           onClose={() => setShowAddModal(false)}
           onAddMaterial={handleAddMaterial}
           dropdownData={dropdownData}
+        />
+
+        <CsvImportModal
+          isOpen={showCsvImportModal}
+          onClose={() => setShowCsvImportModal(false)}
+          onImportSuccess={handleCsvImportSuccess}
+          importEndpoint="/api/materials/import"
+          title="Import Materials from CSV"
+          sampleData={sampleMaterialsData}
+          expectedColumns={expectedMaterialsColumns}
         />
       </div>
     </div>

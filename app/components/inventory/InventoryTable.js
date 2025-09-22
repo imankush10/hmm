@@ -38,8 +38,11 @@ export default function InventoryTable({ materials, onViewTraceability }) {
             </tr>
           </thead>
           <tbody className="bg-gray-800 divide-y divide-gray-700">
-            {materials.map((material) => (
-              <tr key={material.id} className="hover:bg-gray-700/50">
+            {materials.map((material, index) => (
+              <tr
+                key={material.id || `material-${index}`}
+                className="hover:bg-gray-700/50"
+              >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="font-medium text-white">{material.id}</div>
                 </td>

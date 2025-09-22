@@ -32,11 +32,13 @@ export default function InventoryFilters({
           className="w-full px-4 py-2 border border-gray-600 rounded-lg text-white bg-gray-700"
         >
           <option value="">All Types</option>
-          {materialTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
+          {materialTypes
+            .filter((type, index, arr) => type && arr.indexOf(type) === index)
+            .map((type, index) => (
+              <option key={`type-${index}-${type}`} value={type}>
+                {type}
+              </option>
+            ))}
         </select>
 
         <select

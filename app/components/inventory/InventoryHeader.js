@@ -1,9 +1,14 @@
 // components/inventory/InventoryHeader.js (New File)
 "use client";
 
-import { Plus, Shield, Download } from "lucide-react";
+import { Plus, Shield, Download, Upload } from "lucide-react";
 
-export default function InventoryHeader({ isAdmin, onAdd, onExport }) {
+export default function InventoryHeader({
+  isAdmin,
+  onAdd,
+  onExport,
+  onImport,
+}) {
   return (
     <div className="bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
       <div className="flex justify-between items-center">
@@ -20,6 +25,14 @@ export default function InventoryHeader({ isAdmin, onAdd, onExport }) {
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
             >
               <Plus className="w-4 h-4" /> Add Material
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              onClick={onImport}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" /> Import CSV
             </button>
           )}
           <button
